@@ -595,3 +595,119 @@ DELIMITER ;
 --     ORDER BY leadCount DESC;
 -- END$$
 -- DELIMITER ;
+
+
+-- other stuff i forgot
+
+
+DELIMITER //
+CREATE PROCEDURE createPerson(
+    IN IN_name VARCHAR(255),
+    IN IN_email VARCHAR(255),
+    IN IN_phone VARCHAR(50)
+)
+BEGIN
+    INSERT INTO Person (name, email, phone)
+    VALUES (IN_name, IN_email, IN_phone);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE updatePerson(
+    IN IN_personID INT,
+    IN IN_newName VARCHAR(255),
+    IN IN_newEmail VARCHAR(255),
+    IN IN_newPhone VARCHAR(50)
+)
+BEGIN
+    UPDATE Person
+    SET name = IN_newName,
+        email = IN_newEmail,
+        phone = IN_newPhone
+    WHERE personID = IN_personID;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE updateCustomerPreferences(
+    IN IN_custPrefID INT,
+    IN IN_contactMethodID INT,
+    IN IN_pLanguage VARCHAR(100),
+    IN IN_pContactTime VARCHAR(100),
+    IN IN_pBudget DECIMAL(10,2)
+)
+BEGIN
+    UPDATE CustomerPreferences
+    SET contactMethodID = IN_contactMethodID,
+        preferredLanguage = IN_pLanguage,
+        preferredContactTime = IN_pContactTime,
+        preferredBudget = IN_pBudget
+    WHERE custPrefID = IN_custPrefID;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE addCustomerProductInterest(
+    IN IN_custID INT,
+    IN IN_productID INT
+)
+BEGIN
+    INSERT INTO CustomerProductInterest (custID, productID)
+    VALUES (IN_custID, IN_productID);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE removeCustomerProductInterest(
+    IN IN_custID INT,
+    IN IN_productID INT
+)
+BEGIN
+    DELETE FROM CustomerProductInterest
+    WHERE custID = IN_custID AND productID = IN_productID;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllEmployees()
+BEGIN
+    SELECT * FROM Employee;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllCustomers()
+BEGIN
+    SELECT * FROM Customer;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllCampaigns()
+BEGIN
+    SELECT * FROM Campaign;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllAddressTypes()
+BEGIN
+    SELECT * FROM AddressType;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllInteractionChannels()
+BEGIN
+    SELECT * FROM InteractionChannel;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE getAllStatus()
+BEGIN
+    SELECT * FROM Status;
+END //
+DELIMITER ;
+
+
