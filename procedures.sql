@@ -1,5 +1,299 @@
--- leads procedures crm
--- CREATE LEAD
+-- WARNING: This script will DROP and RECREATE your 'crm' database,
+-- resulting in the loss of all existing data.
+-- It implements hard deletes with ON DELETE CASCADE for all foreign keys.
+
+DROP DATABASE IF EXISTS crm;
+CREATE DATABASE crm;
+USE crm;
+
+-- Table: person
+-- Removed isDeleted column
+CREATE TABLE person (
+    personID INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    dateCreated DATETIME,
+    dateUpdated DATETIME
+);
+
+-- Table: employee
+CREATE TABLE employee (
+    empID INT AUTO_INCREMENT PRIMARY KEY,
+    personID INT,
+    role VARCHAR(100),
+    dateHired DATETIME,
+    dateTerminated DATETIME,
+    FOREIGN KEY (personID) REFERENCES person(personID) ON DELETE CASCADE
+);
+
+-- Table: addressType
+CREATE TABLE addressType (
+    typeID INT AUTO_INCREMENT PRIMARY KEY,
+    typeName VARCHAR(100)
+);
+
+-- Table: address
+-- Removed isDeleted column
+CREATE TABLE address (
+    addressID INT AUTO_INCREMENT PRIMARY KEY,
+    personID INT,
+    zip VARCHAR(20),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    country VARCHAR(100),
+    typeID INT,
+    FOREIGN KEY (personID) REFERENCES person(personID) ON DELETE CASCADE,
+    FOREIGN KEY (typeID) REFERENCES addressType(typeID) ON DELETE CASCADE
+);
+
+-- Table: campaign
+-- Removed isDeleted column
+CREATE TABLE campaign (
+    campaignID INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    startDate DATETIME,
+    endDate DATETIME,
+    budget DECIMAL(10,2)
+);
+
+-- Table: source
+-- Removed isDeleted column
+CREATE TABLE source (
+    sourceID INT AUTO_INCREMENT PRIMARY KEY,
+    campaignID INT,
+    sourceName VARCHAR(255),
+    sourceDesc VARCHAR(1000),
+    FOREIGN KEY (campaignID) REFERENCES campaign(campaignID) ON DELETE CASCADE
+);
+
+-- Table: status
+CREATE TABLE status (
+    statusID INT AUTO_INCREMENT PRIMARY KEY,
+    statusName VARCHAR(100),
+    statusDesc VARCHAR(1000)
+);
+
+-- Table: leads
+-- Removed isDeleted column
+CREATE TABLE leads (
+    leadID INT AUTO_INCREMENT PRIMARY KEY,
+    sourceID INT,
+    statusID INT,
+    empID INT,
+    personID INT,
+    dateCreated DATETIME,
+    notes VARCHAR(1000),
+    FOREIGN KEY (sourceID) REFERENCES source(sourceID) ON DELETE CASCADE,
+    FOREIGN KEY (statusID) REFERENCES status(statusID) ON DELETE CASCADE,
+    FOREIGN KEY (empID) REFERENCES employee(empID) ON DELETE CASCADE,
+    FOREIGN KEY (personID) REFERENCES person(personID) ON DELETE CASCADE
+);
+
+-- Table: customer
+-- Removed isDeleted column
+CREATE TABLE customer (
+    custID INT AUTO_INCREMENT PRIMARY KEY,
+    leadID INT,
+    personID INT,
+    dateCreated DATETIME,
+    dateUpdated DATETIME,
+    FOREIGN KEY (leadID) REFERENCES leads(leadID) ON DELETE CASCADE,
+    FOREIGN KEY (personID) REFERENCES person(personID) ON DELETE CASCADE
+);
+
+-- Table: contactMethod
+CREATE TABLE contactMethod (
+    methodID INT AUTO_INCREMENT PRIMARY KEY,
+    methodName VARCHAR(100)
+);
+
+-- Table: customerPreferences
+-- Removed isDeleted column
+CREATE TABLE customerPreferences (
+    custPrefID INT AUTO_INCREMENT PRIMARY KEY,
+    custID INT,
+    contactMethodID INT,
+    pLanguage VARCHAR(50),
+    pContactTime VARCHAR(100),
+    pBudget DECIMAL(10,2),
+    dateUpdated DATETIME,
+    FOREIGN KEY (custID) REFERENCES customer(custID) ON DELETE CASCADE,
+    FOREIGN KEY (contactMethodID) REFERENCES contactMethod(methodID) ON DELETE CASCADE
+);
+
+-- Table: product
+-- Removed isDeleted column
+CREATE TABLE product (
+    productID INT AUTO_INCREMENT PRIMARY KEY,
+    productName VARCHAR(255),
+    productDesc VARCHAR(1000)
+);
+
+-- Table: customerProductInterest
+CREATE TABLE customerProductInterest (
+    custID INT,
+    productID INT,
+    PRIMARY KEY (custID, productID),
+    FOREIGN KEY (custID) REFERENCES customer(custID) ON DELETE CASCADE,
+    FOREIGN KEY (productID) REFERENCES product(productID) ON DELETE CASCADE
+);
+
+-- Table: interactionChannel
+CREATE TABLE interactionChannel (
+    channelID INT AUTO_INCREMENT PRIMARY KEY,
+    channelName VARCHAR(100)
+);
+
+-- Table: interaction
+-- Removed isDeleted column
+CREATE TABLE interaction (
+    interactionID INT AUTO_INCREMENT PRIMARY KEY,
+    empID INT,
+    custID INT,
+    notes VARCHAR(1000),
+    channelID INT,
+    interactionDate DATETIME,
+    FOREIGN KEY (empID) REFERENCES employee(empID) ON DELETE CASCADE,
+    FOREIGN KEY (custID) REFERENCES customer(custID) ON DELETE CASCADE,
+    FOREIGN KEY (channelID) REFERENCES interactionChannel(channelID) ON DELETE CASCADE
+);
+
+-- Table: followUp
+-- Removed isDeleted column
+CREATE TABLE followUp (
+    followUpID INT AUTO_INCREMENT PRIMARY KEY,
+    leadID INT,
+    empID INT,
+    notes VARCHAR(1000),
+    followUpDate DATETIME,
+    FOREIGN KEY (leadID) REFERENCES leads(leadID) ON DELETE CASCADE,
+    FOREIGN KEY (empID) REFERENCES employee(empID) ON DELETE CASCADE
+);
+
+-- Table: statusHistory
+CREATE TABLE statusHistory (
+    statusHistoryID INT AUTO_INCREMENT PRIMARY KEY,
+    leadID INT,
+    statusID INT,
+    changedByEmpID INT,
+    changeDate DATETIME,
+    notes VARCHAR(1000),
+    FOREIGN KEY (leadID) REFERENCES leads(leadID) ON DELETE CASCADE,
+    FOREIGN KEY (statusID) REFERENCES status(statusID) ON DELETE CASCADE,
+    FOREIGN KEY (changedByEmpID) REFERENCES employee(empID) ON DELETE CASCADE
+);
+
+
+-- Insert dummy data for person
+INSERT INTO person (name, email, phone, dateCreated, dateUpdated) VALUES
+('Alice Johnson', 'alice@example.com', '123-456-7890', NOW(), NOW()),
+('Bob Smith', 'bob@example.com', '234-567-8901', NOW(), NOW()),
+('Charlie Davis', 'charlie@example.com', '345-678-9012', NOW(), NOW()),
+('Diana Prince', 'diana@example.com', '456-789-0123', NOW(), NOW());
+
+-- Insert dummy data for employee (linked to person)
+INSERT INTO employee (personID, role, dateHired, dateTerminated) VALUES
+(1, 'Sales Manager', '2020-01-15', NULL),
+(2, 'Support Specialist', '2021-05-10', NULL);
+
+-- Insert dummy data for addressType
+INSERT INTO addressType (typeName) VALUES
+('Home'),
+('Work'),
+('Billing');
+
+-- Insert dummy data for address (linked to person and addressType)
+INSERT INTO address (personID, zip, city, state, country, typeID) VALUES
+(1, '10001', 'New York', 'NY', 'USA', 1),
+(2, '90001', 'Los Angeles', 'CA', 'USA', 2),
+(3, '60601', 'Chicago', 'IL', 'USA', 3),
+(4, '73301', 'Austin', 'TX', 'USA', 1);
+
+-- Insert dummy data for campaign
+INSERT INTO campaign (name, startDate, endDate, budget) VALUES
+('Spring Sale 2025', '2025-03-01', '2025-03-31', 10000.00),
+('Black Friday 2025', '2025-11-20', '2025-11-30', 20000.00);
+
+-- Insert dummy data for source (linked to campaign)
+INSERT INTO source (campaignID, sourceName, sourceDesc) VALUES
+(1, 'Google Ads', 'Paid search ads'),
+(1, 'Facebook Ads', 'Social media campaign'),
+(2, 'Email Marketing', 'Newsletter campaign');
+
+-- Insert dummy data for status
+INSERT INTO status (statusName, statusDesc) VALUES
+('New Lead', 'Initial stage'),
+('Contacted', 'Lead contacted'),
+('Qualified', 'Qualified as potential customer'),
+('Lost', 'Lead lost or unresponsive'),
+('Converted', 'Converted to customer');
+
+-- Insert dummy data for leads (linked to source, status, emp, person)
+INSERT INTO leads (sourceID, statusID, empID, personID, dateCreated, notes) VALUES
+(1, 1, 1, 3, NOW(), 'Interested in product A'),
+(2, 2, 2, 4, NOW(), 'Requested demo'),
+(3, 3, 1, 2, NOW(), 'High budget lead');
+
+-- Insert dummy data for customer (linked to leads and person)
+INSERT INTO customer (leadID, personID, dateCreated, dateUpdated) VALUES
+(3, 2, NOW(), NOW());
+
+-- Insert dummy data for contactMethod
+INSERT INTO contactMethod (methodName) VALUES
+('Email'),
+('Phone'),
+('SMS'),
+('In-Person');
+
+-- Insert dummy data for customerPreferences (linked to customer and contactMethod)
+INSERT INTO customerPreferences (custID, contactMethodID, pLanguage, pContactTime, pBudget, dateUpdated) VALUES
+(1, 1, 'English', 'Morning', 5000.00, NOW());
+
+-- Insert dummy data for product
+INSERT INTO product (productName, productDesc) VALUES
+('Product A', 'Description for product A'),
+('Product B', 'Description for product B'),
+('Product C', 'Description for product C');
+
+-- Insert dummy data for customerProductInterest (linked to customer and product)
+INSERT INTO customerProductInterest (custID, productID) VALUES
+(1, 1),
+(1, 3);
+
+-- Insert dummy data for interactionChannel
+INSERT INTO interactionChannel (channelName) VALUES
+('Email'),
+('Phone Call'),
+('Chat'),
+('Meeting');
+
+-- Insert dummy data for interaction (linked to employee, customer, interactionChannel)
+INSERT INTO interaction (empID, custID, notes, channelID, interactionDate) VALUES
+(1, 1, 'Discussed pricing and features', 2, NOW()),
+(2, 1, 'Followed up via email', 1, NOW());
+
+-- Insert dummy data for followUp (linked to leads and employees)
+INSERT INTO followUp (leadID, empID, notes, followUpDate) VALUES
+(1, 1, 'Call to discuss requirements', '2025-06-05'),
+(2, 2, 'Send product brochure', '2025-06-07');
+
+-- Insert dummy data for statusHistory (linked to leads, status, employee)
+INSERT INTO statusHistory (leadID, statusID, changedByEmpID, changeDate, notes) VALUES
+(1, 1, 1, NOW(), 'Lead created'),
+(1, 2, 1, NOW(), 'Contacted lead'),
+(2, 1, 2, NOW(), 'Lead created');
+
+-- Add completed column to the 'followUp' table and modify primary key
+ALTER TABLE followUp MODIFY COLUMN followUpID INT NOT NULL AUTO_INCREMENT;
+
+
+
+
+
+
+-- Stored Procedures
+
 DELIMITER $$
 CREATE PROCEDURE createLead(
     IN IN_personID INT,
@@ -14,8 +308,8 @@ BEGIN
 END$$
 DELIMITER ;
 
--- UPDATE LEAD
 DELIMITER $$
+
 CREATE PROCEDURE updateLead(
     IN IN_leadID INT,
     IN IN_newSourceID INT,
@@ -33,8 +327,8 @@ BEGIN
 END$$
 DELIMITER ;
 
--- ASSIGN EMPLOYEE TO LEAD
 DELIMITER $$
+
 CREATE PROCEDURE assignLeadToEmployee(
     IN IN_leadID INT,
     IN IN_empID INT
@@ -46,7 +340,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- CHANGE STATUS OF LEAD
 DELIMITER $$
 CREATE PROCEDURE changeLeadStatus(
     IN IN_leadID INT,
@@ -59,12 +352,11 @@ BEGIN
 END$$
 DELIMITER ;
 
--- GET LEADS FILTERED
 DELIMITER $$
 CREATE PROCEDURE getLeads(
-    IN IN_empID INT, 
-    IN IN_statusID INT, 
-    IN IN_startDate DATE, 
+    IN IN_empID INT,
+    IN IN_statusID INT,
+    IN IN_startDate DATE,
     IN IN_endDate DATE
 )
 BEGIN
@@ -81,7 +373,6 @@ END$$
 DELIMITER ;
 
 
--- Create Customer
 DELIMITER $$
 CREATE PROCEDURE createCustomer(
     IN IN_leadID INT,
@@ -93,7 +384,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Update Customer
 DELIMITER $$
 CREATE PROCEDURE updateCustomer(
     IN IN_custID INT,
@@ -107,7 +397,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Customer Profile
 DELIMITER $$
 CREATE PROCEDURE getCustomerProfile(
     IN IN_custID INT
@@ -120,7 +409,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Customer Status Journey
 DELIMITER $$
 CREATE PROCEDURE getCustomerStatusJourney(
     IN IN_custID INT
@@ -135,7 +423,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Customer Preferences
 DELIMITER $$
 CREATE PROCEDURE getCustomerPreferences(
     IN IN_custID INT
@@ -148,7 +435,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Customer Product Interests
 DELIMITER $$
 CREATE PROCEDURE getCustomerProductInterests(
     IN IN_custID INT
@@ -162,7 +448,6 @@ END$$
 DELIMITER ;
 
 
--- Create Employee
 DELIMITER $$
 CREATE PROCEDURE createEmployee(
     IN IN_personID INT,
@@ -174,7 +459,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Update Employee
 DELIMITER $$
 CREATE PROCEDURE updateEmployee(
     IN IN_empID INT,
@@ -187,7 +471,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Employee Leads
 DELIMITER $$
 CREATE PROCEDURE getEmployeeLeads(
     IN IN_empID INT
@@ -200,7 +483,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Employee Follow-Ups
 DELIMITER $$
 CREATE PROCEDURE getEmployeeFollowUps(
     IN IN_empID INT
@@ -214,7 +496,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Create Campaign
 DELIMITER $$
 CREATE PROCEDURE createCampaign(
     IN IN_name VARCHAR(255),
@@ -228,7 +509,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Update Campaign
 DELIMITER $$
 CREATE PROCEDURE updateCampaign(
     IN IN_campaignID INT,
@@ -247,7 +527,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Link Source to Campaign
 DELIMITER $$
 CREATE PROCEDURE linkSourceToCampaign(
     IN IN_sourceID INT,
@@ -260,7 +539,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Campaign Performance
 DELIMITER $$
 CREATE PROCEDURE getCampaignPerformance(
     IN IN_campaignID INT
@@ -275,7 +553,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Sources for Campaign
 DELIMITER $$
 CREATE PROCEDURE getSourcesForCampaign(
     IN IN_campaignID INT
@@ -286,9 +563,6 @@ END$$
 DELIMITER ;
 
 
-
-
--- Add Product
 DELIMITER $$
 CREATE PROCEDURE addProduct(
     IN IN_productName VARCHAR(255),
@@ -300,7 +574,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Update Product
 DELIMITER $$
 CREATE PROCEDURE updateProduct(
     IN IN_productID INT,
@@ -315,7 +588,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get All Products
 DELIMITER $$
 CREATE PROCEDURE getProducts()
 BEGIN
@@ -323,7 +595,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Get Customer Favorites (interests)
 DELIMITER $$
 CREATE PROCEDURE getCustomerFavorites(
     IN IN_custID INT
@@ -337,19 +608,7 @@ END$$
 DELIMITER ;
 
 
-
-
-
-
-
-
-
-
-
--- interaction procedures/functionss
-
 DELIMITER //
-
 CREATE PROCEDURE logInteraction (
     IN p_custID INT,
     IN p_empID INT,
@@ -361,16 +620,14 @@ BEGIN
     INSERT INTO interaction (custID, empID, channelID, notes, interactionDate)
     VALUES (p_custID, p_empID, p_channelID, p_notes, p_interactionDate);
 END //
-
 DELIMITER ;
 
 DELIMITER //
-
 CREATE PROCEDURE getCustomerInteractions (
     IN p_custID INT
 )
 BEGIN
-    SELECT 
+    SELECT
         i.interactionID,
         i.empID,
         e.role AS employeeRole,
@@ -383,16 +640,14 @@ BEGIN
     WHERE i.custID = p_custID
     ORDER BY i.interactionDate DESC;
 END //
-
 DELIMITER ;
 
 DELIMITER //
-
 CREATE PROCEDURE getEmployeeInteractions (
     IN p_empID INT
 )
 BEGIN
-    SELECT 
+    SELECT
         i.interactionID,
         i.custID,
         p.name AS customerName,
@@ -406,15 +661,10 @@ BEGIN
     WHERE i.empID = p_empID
     ORDER BY i.interactionDate DESC;
 END //
-
 DELIMITER ;
 
 
-
--- follow up procedures
-
 DELIMITER $$
-
 CREATE PROCEDURE createFollowUp(
     IN p_leadID INT,
     IN p_empID INT,
@@ -425,15 +675,9 @@ BEGIN
     INSERT INTO followUp (leadID, empID, followUpDate, notes)
     VALUES (p_leadID, p_empID, p_followUpDate, p_notes);
 END$$
-
 DELIMITER ;
 
-ALTER TABLE followUp ADD COLUMN completed BOOLEAN DEFAULT FALSE;
-ALTER TABLE followUp 
-MODIFY COLUMN followUpID INT NOT NULL AUTO_INCREMENT;
-
 DELIMITER $$
-
 CREATE PROCEDURE completeFollowUp(
     IN p_followUpID INT
 )
@@ -442,12 +686,10 @@ BEGIN
     SET completed = TRUE
     WHERE followUpID = p_followUpID;
 END$$
-
 DELIMITER ;
 
 
 DELIMITER $$
-
 CREATE PROCEDURE getPendingFollowUps(
     IN p_empID INT,
     IN p_leadID INT,
@@ -461,13 +703,9 @@ BEGIN
       AND (p_leadID IS NULL OR leadID = p_leadID)
       AND (p_beforeDate IS NULL OR followUpDate <= p_beforeDate);
 END$$
-
 DELIMITER ;
 
 
-
-
--- 1. Log a status change
 DELIMITER $$
 CREATE PROCEDURE logStatusChange(
     IN IN_leadID INT,
@@ -485,15 +723,14 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 2. Get status history for a lead
 DELIMITER $$
 CREATE PROCEDURE getStatusHistory(IN IN_leadID INT)
 BEGIN
-    SELECT 
+    SELECT
         sh.statusHistoryID,
         s.statusName,
         sh.changeDate,
-        CONCAT(p.firstName, ' ', p.lastName) AS changedBy,
+        p.name AS changedBy,
         sh.notes
     FROM statusHistory sh
     JOIN status s ON sh.statusID = s.statusID
@@ -504,12 +741,11 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 3. Status counts for dashboard
 DELIMITER $$
 CREATE PROCEDURE getStatusCounts()
 BEGIN
-    SELECT 
-        s.statusName, 
+    SELECT
+        s.statusName,
         COUNT(*) AS leadCount
     FROM leads l
     JOIN status s ON l.statusID = s.statusID
@@ -518,14 +754,11 @@ BEGIN
 END$$
 DELIMITER ;
 
-
-
--- 4. Funnel conversion statistics
 DELIMITER $$
 CREATE PROCEDURE getFunnelConversionStats()
 BEGIN
-    SELECT 
-        s.statusName, 
+    SELECT
+        s.statusName,
         COUNT(*) AS leadCount
     FROM leads l
     JOIN status s ON l.statusID = s.statusID
@@ -534,11 +767,10 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 5. Campaign lead count
 DELIMITER $$
 CREATE PROCEDURE getCampaignLeadCount(IN IN_campaignID INT)
 BEGIN
-    SELECT 
+    SELECT
         c.name AS campaignName,
         COUNT(l.leadID) AS leadCount
     FROM campaign c
@@ -549,11 +781,10 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 6. Average lead duration per status
 DELIMITER $$
 CREATE PROCEDURE getAverageLeadDurationPerStatus()
 BEGIN
-    SELECT 
+    SELECT
         s.statusName,
         ROUND(AVG(DATEDIFF(CURDATE(), l.dateCreated)), 1) AS avgDurationDays
     FROM leads l
@@ -562,11 +793,10 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 7. Top product interests
 DELIMITER $$
 CREATE PROCEDURE getTopProductInterests()
 BEGIN
-    SELECT 
+    SELECT
         p.productName,
         COUNT(*) AS interestCount
     FROM customerProductInterest cpi
@@ -577,137 +807,454 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 8. Budget distribution (Assuming a 'budget' column in 'leads') do this one later fix amounts and currencies
--- DELIMITER $$
--- CREATE PROCEDURE getBudgetDistribution()
--- BEGIN
---     SELECT 
---         CASE 
---             WHEN budget < 1000 THEN 'Under $1k'
---             WHEN budget BETWEEN 1000 AND 4999 THEN '$1k - $5k'
---             WHEN budget BETWEEN 5000 AND 9999 THEN '$5k - $10k'
---             ELSE 'Over $10k'
---         END AS budgetRange,
---         COUNT(*) AS leadCount
---     FROM leads
---     WHERE budget IS NOT NULL
---     GROUP BY budgetRange
---     ORDER BY leadCount DESC;
--- END$$
--- DELIMITER ;
-
-
--- other stuff i forgot
-
-
-DELIMITER //
+-- New: Create Person (Fundamental for Employees, Leads, Customers)
+DELIMITER $$
 CREATE PROCEDURE createPerson(
-    IN IN_name VARCHAR(255),
-    IN IN_email VARCHAR(255),
-    IN IN_phone VARCHAR(50)
+    IN p_name VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_phone VARCHAR(50)
 )
 BEGIN
-    INSERT INTO Person (name, email, phone)
-    VALUES (IN_name, IN_email, IN_phone);
-END //
+    INSERT INTO person (name, email, phone, dateCreated, dateUpdated)
+    VALUES (p_name, p_email, p_phone, NOW(), NOW());
+    SELECT LAST_INSERT_ID() AS newPersonID;
+END$$
 DELIMITER ;
 
-DELIMITER //
+-- New: Update Person (for general person details)
+DELIMITER $$
 CREATE PROCEDURE updatePerson(
-    IN IN_personID INT,
-    IN IN_newName VARCHAR(255),
-    IN IN_newEmail VARCHAR(255),
-    IN IN_newPhone VARCHAR(50)
+    IN p_personID INT,
+    IN p_newName VARCHAR(255),
+    IN p_newEmail VARCHAR(255),
+    IN p_newPhone VARCHAR(50)
 )
 BEGIN
-    UPDATE Person
-    SET name = IN_newName,
-        email = IN_newEmail,
-        phone = IN_newPhone
-    WHERE personID = IN_personID;
-END //
+    UPDATE person
+    SET
+        name = p_newName,
+        email = p_newEmail,
+        phone = p_newPhone,
+        dateUpdated = NOW()
+    WHERE personID = p_personID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
+-- New: Delete Person (Hard delete - will cascade to employee, address, leads, customer)
+DELIMITER $$
+CREATE PROCEDURE deletePerson(
+    IN p_personID INT
+)
+BEGIN
+    DELETE FROM person WHERE personID = p_personID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Total Customers
+DELIMITER $$
+CREATE PROCEDURE getTotalCustomers()
+BEGIN
+    SELECT COUNT(custID) AS TotalCustomers
+    FROM customer; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Total Conversions (Leads with 'Converted' status)
+DELIMITER $$
+CREATE PROCEDURE getTotalConversions()
+BEGIN
+    SELECT COUNT(l.leadID) AS TotalConversions
+    FROM leads l
+    JOIN status s ON l.statusID = s.statusID
+    WHERE s.statusName = 'Converted'; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Count of Active Campaigns
+DELIMITER $$
+CREATE PROCEDURE getActiveCampaignsCount()
+BEGIN
+    SELECT COUNT(campaignID) AS ActiveCampaigns
+    FROM campaign
+    WHERE endDate >= CURDATE() OR endDate IS NULL; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Follow-Ups Due Today
+DELIMITER $$
+CREATE PROCEDURE getFollowUpsDueToday(IN p_empID INT)
+BEGIN
+    SELECT
+        f.followUpID,
+        f.leadID,
+        p.name AS leadPersonName,
+        f.notes,
+        f.followUpDate
+    FROM followUp f
+    JOIN leads l ON f.leadID = l.leadID
+    JOIN person p ON l.personID = p.personID
+    WHERE f.completed = FALSE
+      AND DATE(f.followUpDate) = CURDATE()
+      AND (p_empID IS NULL OR f.empID = p_empID); -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Recent Follow-Ups (for a global timeline/dashboard)
+DELIMITER $$
+CREATE PROCEDURE getRecentFollowUps(IN p_limit INT)
+BEGIN
+    SELECT
+        f.followUpID,
+        f.leadID,
+        p.name AS leadPersonName,
+        e_person.name AS assignedEmployee,
+        f.notes,
+        f.followUpDate,
+        f.completed
+    FROM followUp f
+    JOIN leads l ON f.leadID = l.leadID
+    JOIN person p ON l.personID = p.personID
+    JOIN employee e ON f.empID = e.empID
+    JOIN person e_person ON e.personID = e_person.personID
+    ORDER BY f.followUpDate DESC
+    LIMIT p_limit; -- Added semicolon here
+END$$
+DELIMITER ;
+
+
+-- New: Delete Lead (Hard delete - will cascade to statusHistory, followUp)
+DELIMITER $$
+CREATE PROCEDURE deleteLead(
+    IN p_leadID INT
+)
+BEGIN
+    DELETE FROM leads WHERE leadID = p_leadID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Delete Customer (Hard delete - will cascade to customerPreferences, customerProductInterest, interaction)
+DELIMITER $$
+CREATE PROCEDURE deleteCustomer(
+    IN p_custID INT
+)
+BEGIN
+    DELETE FROM customer WHERE custID = p_custID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Update Customer Preferences
+DELIMITER $$
 CREATE PROCEDURE updateCustomerPreferences(
-    IN IN_custPrefID INT,
-    IN IN_contactMethodID INT,
-    IN IN_pLanguage VARCHAR(100),
-    IN IN_pContactTime VARCHAR(100),
-    IN IN_pBudget DECIMAL(10,2)
+    IN p_custPrefID INT,
+    IN p_contactMethodID INT,
+    IN p_pLanguage VARCHAR(50),
+    IN p_pContactTime VARCHAR(100),
+    IN p_pBudget DECIMAL(10,2)
 )
 BEGIN
-    UPDATE CustomerPreferences
-    SET contactMethodID = IN_contactMethodID,
-        preferredLanguage = IN_pLanguage,
-        preferredContactTime = IN_pContactTime,
-        preferredBudget = IN_pBudget
-    WHERE custPrefID = IN_custPrefID;
-END //
+    UPDATE customerPreferences
+    SET
+        contactMethodID = p_contactMethodID,
+        pLanguage = p_pLanguage,
+        pContactTime = p_pContactTime,
+        pBudget = p_pBudget,
+        dateUpdated = NOW()
+    WHERE custPrefID = p_custPrefID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE addCustomerProductInterest(
-    IN IN_custID INT,
-    IN IN_productID INT
+-- New: Get All Customers (with filtering options)
+DELIMITER $$
+CREATE PROCEDURE getAllCustomers(
+    IN p_startDate DATE,
+    IN p_endDate DATE,
+    IN p_minBudget DECIMAL(10,2),
+    IN p_maxBudget DECIMAL(10,2),
+    IN p_productID INT
 )
 BEGIN
-    INSERT INTO CustomerProductInterest (custID, productID)
-    VALUES (IN_custID, IN_productID);
-END //
+    SELECT
+        c.custID,
+        p.name AS customerName,
+        p.email,
+        p.phone,
+        c.dateCreated,
+        cp.pBudget,
+        cp.pLanguage
+    FROM customer c
+    JOIN person p ON c.personID = p.personID
+    LEFT JOIN customerPreferences cp ON c.custID = cp.custID
+    WHERE (p_startDate IS NULL OR c.dateCreated >= p_startDate)
+      AND (p_endDate IS NULL OR c.dateCreated <= p_endDate)
+      AND (p_minBudget IS NULL OR cp.pBudget >= p_minBudget)
+      AND (p_maxBudget IS NULL OR cp.pBudget <= p_maxBudget)
+      AND (p_productID IS NULL OR c.custID IN (SELECT custID FROM customerProductInterest WHERE productID = p_productID)); -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE removeCustomerProductInterest(
-    IN IN_custID INT,
-    IN IN_productID INT
+-- New: Get Customer Detailed Profile (combines info from multiple tables)
+DELIMITER $$
+CREATE PROCEDURE getCustomerDetailedProfile(
+    IN p_custID INT
 )
 BEGIN
-    DELETE FROM CustomerProductInterest
-    WHERE custID = IN_custID AND productID = IN_productID;
-END //
+    SELECT
+        c.custID,
+        p.personID,
+        p.name,
+        p.email,
+        p.phone,
+        c.dateCreated AS customerCreationDate,
+        c.dateUpdated AS customerLastUpdated,
+        l.leadID,
+        source_t.sourceName,
+        campaign_t.name AS campaignName,
+        emp_p.name AS assignedEmployeeName,
+        emp_t.role AS assignedEmployeeRole,
+        cp.custPrefID,
+        cm.methodName AS preferredContactMethod,
+        cp.pLanguage AS preferredLanguage,
+        cp.pContactTime AS preferredContactTime,
+        cp.pBudget AS preferredBudget,
+        cp.dateUpdated AS preferencesLastUpdated
+    FROM customer c
+    JOIN person p ON c.personID = p.personID
+    LEFT JOIN leads l ON c.leadID = l.leadID
+    LEFT JOIN source source_t ON l.sourceID = source_t.sourceID
+    LEFT JOIN campaign campaign_t ON source_t.campaignID = campaign_t.campaignID
+    LEFT JOIN employee emp_t ON l.empID = emp_t.empID
+    LEFT JOIN person emp_p ON emp_t.personID = emp_p.personID
+    LEFT JOIN customerPreferences cp ON c.custID = cp.custID
+    LEFT JOIN contactMethod cm ON cp.contactMethodID = cm.methodID
+    WHERE c.custID = p_custID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE getAllEmployees()
+-- New: Get Leads for a specific Campaign (can use getLeads with source filter too, but this is explicit)
+DELIMITER $$
+CREATE PROCEDURE getLeadsForCampaign(
+    IN p_campaignID INT
+)
 BEGIN
-    SELECT * FROM Employee;
-END //
+    SELECT
+        l.leadID,
+        p.name AS leadName,
+        s.statusName,
+        src.sourceName,
+        l.dateCreated,
+        l.notes
+    FROM leads l
+    JOIN person p ON l.personID = p.personID
+    JOIN status s ON l.statusID = s.statusID
+    JOIN source src ON l.sourceID = src.sourceID
+    WHERE src.campaignID = p_campaignID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE getAllCustomers()
+
+-- New: Delete Campaign (Hard delete - will cascade to source)
+DELIMITER $$
+CREATE PROCEDURE deleteCampaign(
+    IN p_campaignID INT
+)
 BEGIN
-    SELECT * FROM Customer;
-END //
+    DELETE FROM campaign WHERE campaignID = p_campaignID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
+-- New: Create Source
+DELIMITER $$
+CREATE PROCEDURE createSource(
+    IN p_campaignID INT,
+    IN p_sourceName VARCHAR(255),
+    IN p_sourceDesc VARCHAR(1000)
+)
+BEGIN
+    INSERT INTO source (campaignID, sourceName, sourceDesc)
+    VALUES (p_campaignID, p_sourceName, p_sourceDesc); -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Update Source
+DELIMITER $$
+CREATE PROCEDURE updateSource(
+    IN p_sourceID INT,
+    IN p_newCampaignID INT,
+    IN p_newSourceName VARCHAR(255),
+    IN p_newSourceDesc VARCHAR(1000)
+)
+BEGIN
+    UPDATE source
+    SET
+        campaignID = p_newCampaignID,
+        sourceName = p_newSourceName,
+        sourceDesc = p_newSourceDesc
+    WHERE sourceID = p_sourceID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Delete Source (Hard delete - will cascade to leads)
+DELIMITER $$
+CREATE PROCEDURE deleteSource(
+    IN p_sourceID INT
+)
+BEGIN
+    DELETE FROM source WHERE sourceID = p_sourceID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get All Campaigns
+DELIMITER $$
 CREATE PROCEDURE getAllCampaigns()
 BEGIN
-    SELECT * FROM Campaign;
-END //
+    SELECT
+        c.campaignID,
+        c.name,
+        c.startDate,
+        c.endDate,
+        c.budget,
+        COUNT(l.leadID) AS totalLeadsGenerated -- Simple lead count for "ROI" for now
+    FROM campaign c
+    LEFT JOIN source s ON c.campaignID = s.campaignID
+    LEFT JOIN leads l ON s.sourceID = l.sourceID
+    GROUP BY c.campaignID, c.name, c.startDate, c.endDate, c.budget; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE getAllAddressTypes()
+
+
+
+
+
+
+
+-- New: Get All Sources
+DELIMITER $$
+CREATE PROCEDURE getAllSources()
 BEGIN
-    SELECT * FROM AddressType;
-END //
+    SELECT s.*, c.name AS campaignName
+    FROM source s
+    LEFT JOIN campaign c ON s.campaignID = c.campaignID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE getAllInteractionChannels()
+-- New: Delete Product (Hard delete - will cascade to customerProductInterest)
+DELIMITER $$
+CREATE PROCEDURE deleteProduct(
+    IN p_productID INT
+)
 BEGIN
-    SELECT * FROM InteractionChannel;
-END //
+    DELETE FROM product WHERE productID = p_productID; -- Added semicolon here
+END$$
 DELIMITER ;
 
-DELIMITER //
-CREATE PROCEDURE getAllStatus()
+-- New: Get All Employees
+DELIMITER $$
+
+CREATE PROCEDURE getAllEmployees()
 BEGIN
-    SELECT * FROM Status;
-END //
+    SELECT
+        e.empID,
+        p.name AS employeeName,
+        p.email,
+        p.phone,
+        e.role,
+        e.dateHired,
+        e.dateTerminated
+    FROM employee e
+    JOIN person p ON e.personID = p.personID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Employee Details (single employee)
+DELIMITER $$
+CREATE PROCEDURE getEmployeeDetails(
+    IN p_empID INT
+)
+BEGIN
+    SELECT
+        e.empID,
+        p.personID,
+        p.name AS employeeName,
+        p.email,
+        p.phone,
+        e.role,
+        e.dateHired,
+        e.dateTerminated
+    FROM employee e
+    JOIN person p ON e.personID = p.personID
+    WHERE e.empID = p_empID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Delete Employee (Hard delete - will cascade to leads, interaction, followUp, statusHistory)
+DELIMITER $$
+CREATE PROCEDURE deleteEmployee(
+    IN p_empID INT
+)
+BEGIN
+    DELETE FROM employee WHERE empID = p_empID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get All Follow-Ups (for a calendar view, optionally filtered)
+DELIMITER $$
+CREATE PROCEDURE getAllFollowUps(
+    IN p_startDate DATE,
+    IN p_endDate DATE,
+    IN p_completed BOOLEAN
+)
+BEGIN
+    SELECT
+        f.followUpID,
+        f.leadID,
+        p.name AS leadPersonName,
+        e_person.name AS assignedEmployee,
+        f.notes,
+        f.followUpDate,
+        f.completed
+    FROM followUp f
+    JOIN leads l ON f.leadID = l.leadID
+    JOIN person p ON l.personID = p.personID
+    JOIN employee e ON f.empID = e.empID
+    JOIN person e_person ON e.personID = e_person.personID
+    WHERE (p_startDate IS NULL OR DATE(f.followUpDate) >= p_startDate)
+      AND (p_endDate IS NULL OR DATE(f.followUpDate) <= p_endDate)
+      AND (p_completed IS NULL OR f.completed = p_completed)
+    ORDER BY f.followUpDate ASC; -- Added semicolon here
+END$$
 DELIMITER ;
 
 
+-- New: Get Campaign Conversion Funnel
+DELIMITER $$
+CREATE PROCEDURE getCampaignConversionFunnel(IN p_campaignID INT)
+BEGIN
+    SELECT
+        s.statusName,
+        COUNT(DISTINCT l.leadID) AS LeadCount
+    FROM leads l
+    JOIN status s ON l.statusID = s.statusID
+    JOIN source src ON l.sourceID = src.sourceID
+    WHERE src.campaignID = p_campaignID
+    GROUP BY s.statusName
+    ORDER BY s.statusID; -- Added semicolon here
+END$$
+DELIMITER ;
+
+-- New: Get Lead Source Effectiveness
+DELIMITER $$
+CREATE PROCEDURE getSourceEffectiveness()
+BEGIN
+    SELECT
+        src.sourceName,
+        COUNT(l.leadID) AS TotalLeads,
+        SUM(CASE WHEN st.statusName = 'Converted' THEN 1 ELSE 0 END) AS ConvertedLeads,
+        (SUM(CASE WHEN st.statusName = 'Converted' THEN 1 ELSE 0 END) * 100.0 / COUNT(l.leadID)) AS ConversionRate
+    FROM source src
+    LEFT JOIN leads l ON src.sourceID = l.sourceID
+    LEFT JOIN status st ON l.statusID = st.statusID
+    GROUP BY src.sourceName
+    ORDER BY ConversionRate DESC; -- Added semicolon here
+END$$
+DELIMITER ;
