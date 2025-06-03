@@ -1,6 +1,3 @@
--- WARNING: This script will DROP and RECREATE your 'crm' database,
--- resulting in the loss of all existing data.
--- It implements hard deletes with ON DELETE CASCADE for all foreign keys.
 
 DROP DATABASE IF EXISTS crm;
 CREATE DATABASE crm;
@@ -1229,6 +1226,16 @@ BEGIN
     SELECT * FROM contactMethod;
 END$$
 DELIMITER ;
+
+CREATE TABLE admin (
+    adminID INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+INSERT INTO admin (username, password) VALUES
+('admin', 'password123'),
+('john.doe', 'securepass');
 
 DELIMITER //
 CREATE PROCEDURE authenticateAdmin(
